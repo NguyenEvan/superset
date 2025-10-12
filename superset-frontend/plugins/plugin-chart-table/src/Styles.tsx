@@ -96,15 +96,61 @@ export default styled.div`
     .dt-pagination {
       text-align: right;
       /* use padding instead of margin so clientHeight can capture it */
-      padding-top: 0.5em;
-    }
-    .dt-pagination .pagination {
-      margin: 0;
+      padding: 0.75em 0 1.25em 0; /* top: 12px, bottom: 20px to match pagination-container */
     }
 
-    .pagination > li > span.dt-pagination-ellipsis:focus,
-    .pagination > li > span.dt-pagination-ellipsis:hover {
-      background: ${theme.colors.grayscale.light5};
+    .dt-pagination .pagination {
+      margin: 0 15px; /* horizontal margin to match working pagination */
+    }
+
+    .dt-pagination .pagination > li > a,
+    .dt-pagination .pagination > li > span {
+      border: none; /* remove all borders/grid lines */
+      border-radius: ${theme.borderRadius}px; /* rounded corners */
+      padding: 8px 12px; /* consistent padding with design system */
+    }
+
+    .dt-pagination .pagination > li > a:hover,
+    .dt-pagination .pagination > li > a:focus {
+      background-color: ${theme.colors.primary.base}; /* blue background on hover */
+      color: ${theme.colors.grayscale.light5}; /* white text on hover */
+      text-decoration: none; /* remove underline */
+    }
+
+    .dt-pagination .pagination > li.active > a {
+      background-color: ${theme.colors.primary.base}; /* blue background for active page */
+      color: ${theme.colors.grayscale.light5}; /* white text for active page */
+    }
+
+    .dt-pagination .pagination > li > span {
+      padding: 8px 12px;
+      text-decoration: none;
+      background-color: ${theme.colors.grayscale.light5};
+      border-radius: ${theme.borderRadius}px;
+      border: none;
+      color: ${theme.colors.grayscale.dark1};
+      display: inline-block;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    
+    .dt-pagination .pagination > li > span:hover,
+    .dt-pagination .pagination > li > span:focus {
+      background-color: ${theme.colors.primary.base}; /* blue on hover */
+      color: ${theme.colors.grayscale.light5}; /* white text on hover */
+      text-decoration: none;
+    }
+
+    .pagination > li.dt-pagination-ellipsis > a {
+      background-color: transparent; /* no background by default */
+      color: ${theme.colors.grayscale.base}; /* gray text */
+    }
+      
+    .pagination > li.dt-pagination-ellipsis > a:hover,
+    .pagination > li.dt-pagination-ellipsis > a:focus {
+      background-color: ${theme.colors.grayscale.light4}; /* subtle hover */
+      color: ${theme.colors.grayscale.dark1}; /* darker text on hover */
+      text-decoration: none;
     }
 
     .dt-no-results {

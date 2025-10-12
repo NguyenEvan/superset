@@ -91,6 +91,19 @@ export default memo(
     return (
       <div ref={ref} className="dt-pagination" style={style}>
         <ul className="pagination pagination-sm">
+          <li className={currentPage === 0 ? 'disabled' : undefined}>
+            <span
+              role="button"
+              tabIndex={currentPage === 0 ? -1 : 0}
+              onClick={e => {
+                e.preventDefault();
+                if (currentPage > 0) onPageChange(currentPage - 1);
+              }}
+            >
+              «
+            </span>
+          </li>
+          
           {pageItems.map(item =>
             typeof item === 'number' ? (
               // actual page number
@@ -112,9 +125,45 @@ export default memo(
             ) : (
               <li key={item} className="dt-pagination-ellipsis">
                 <span>…</span>
+                <a
+                  href={`#ellipsis-${item}`}
+                  role="button"
+                  onClick={e => {
+                    e.preventDefault();
+                    let targetPage = currentPage;
+                    
+                    const allItems = generatePageItems(pageCount, currentPage, maxPageItemCount);
+                    const ellipsisIndex = allItems.indexOf(item);
+                    
+                    if (item === 'prev-more') {
+                      const pageAfterEllipsis = allItems[ellipsisIndex + 1] as number;
+                      targetPage = pageAfterEllipsis - 1;
+                    } else if (item === 'next-more') {
+                      const pageBeforeEllipsis = allItems[ellipsisIndex - 1] as number;
+                      targetPage = pageBeforeEllipsis + 1;
+                    }
+                    
+                    onPageChange(targetPage);
+                  }}
+                >
+                  …
+                </a>
               </li>
             ),
           )}
+          
+          <li className={currentPage >= pageCount - 1 ? 'disabled' : undefined}>
+            <span
+              role="button"
+              tabIndex={currentPage >= pageCount - 1 ? -1 : 0}
+              onClick={e => {
+                e.preventDefault();
+                if (currentPage < pageCount - 1) onPageChange(currentPage + 1);
+              }}
+            >
+              »
+            </span>
+          </li>
         </ul>
       </div>
     );
