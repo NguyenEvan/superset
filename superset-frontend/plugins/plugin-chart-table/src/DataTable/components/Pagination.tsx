@@ -124,7 +124,6 @@ export default memo(
               </li>
             ) : (
               <li key={item} className="dt-pagination-ellipsis">
-                <span>…</span>
                 <a
                   href={`#ellipsis-${item}`}
                   role="button"
