@@ -16,107 +16,90 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { CSSProperties, forwardRef, memo, Ref } from 'react';
+import { CSSProperties, forwardRef, Ref } from 'react';
+import { styled } from '@superset-ui/core';
+import { createUltimatePagination, ITEM_TYPES } from 'react-ultimate-pagination';
+import PaginationWrapper from 'src/components/Pagination/Wrapper';
+import { Item } from 'src/components/Pagination/Item';
+import { Next } from 'src/components/Pagination/Next';
+import { Prev } from 'src/components/Pagination/Prev';
+import { Ellipsis } from 'src/components/Pagination/Ellipsis';
+
+/**
+ * Create the ultimate pagination component using Superset's standard pagination components.
+ * This replaces the old custom pagination implementation with a standardized, properly styled version.
+ */
+const UltimatePagination = createUltimatePagination({
+  WrapperComponent: PaginationWrapper,
+  itemTypeToComponent: {
+    [ITEM_TYPES.PAGE]: ({ value, isActive, onClick }) => (
+      <Item active={isActive} onClick={onClick}>
+        {value}
+      </Item>
+    ),
+    [ITEM_TYPES.ELLIPSIS]: ({ isActive, onClick }) => (
+      <Ellipsis disabled={isActive} onClick={onClick} />
+    ),
+    [ITEM_TYPES.PREVIOUS_PAGE_LINK]: ({ isActive, onClick }) => (
+      <Prev disabled={isActive} onClick={onClick} />
+    ),
+    [ITEM_TYPES.NEXT_PAGE_LINK]: ({ isActive, onClick }) => (
+      <Next disabled={isActive} onClick={onClick} />
+    ),
+    [ITEM_TYPES.FIRST_PAGE_LINK]: () => null,
+    [ITEM_TYPES.LAST_PAGE_LINK]: () => null,
+  },
+});
+
+/**
+ * Styled wrapper to maintain .dt-pagination class for sticky table calculations
+ * and provide right-aligned layout consistent with the table design.
+ */
+const PaginationContainer = styled.div`
+  text-align: right;
+`;
 
 export interface PaginationProps {
   pageCount: number; // number of pages
-  currentPage?: number; // index of current page, zero-based
-  maxPageItemCount?: number;
-  ellipsis?: string; // content for ellipsis item
-  onPageChange: (page: number) => void; // `page` is zero-based
-  style?: CSSProperties;
+  currentPage?: number; // index of current page, zero-based (for backward compatibility)
+  maxPageItemCount?: number; // kept for backward compatibility (not used by react-ultimate-pagination)
+  onPageChange: (page: number) => void; // `page` is zero-based (for backward compatibility)
+  style?: CSSProperties; // for visibility toggling in sticky mode
 }
-
-// first, ..., prev, current, next, ..., last
-const MINIMAL_PAGE_ITEM_COUNT = 7;
 
 /**
- * Generate numeric page items around current page.
- *   - Always include first and last page
- *   - Add ellipsis if needed
+ * Pagination adapter component that wraps react-ultimate-pagination.
+ * Maintains backward compatibility with the existing DataTable API by:
+ * - Converting 0-based page indexing to 1-based (required by react-ultimate-pagination)
+ * - Maintaining forwardRef for sticky table height calculations
+ * - Supporting style prop for visibility toggling
+ * - Keeping the .dt-pagination class for CSS targeting
  */
-export function generatePageItems(
-  total: number,
-  current: number,
-  width: number,
+export default forwardRef(function Pagination(
+  {
+    style,
+    pageCount,
+    currentPage = 0,
+    maxPageItemCount = 9, // Not used by react-ultimate-pagination, but kept for API compatibility
+    onPageChange,
+  }: PaginationProps,
+  ref: Ref<HTMLDivElement>,
 ) {
-  if (width < MINIMAL_PAGE_ITEM_COUNT) {
-    throw new Error(
-      `Must allow at least ${MINIMAL_PAGE_ITEM_COUNT} page items`,
-    );
-  }
-  if (width % 2 === 0) {
-    throw new Error(`Must allow odd number of page items`);
-  }
-  if (total < width) {
-    return [...new Array(total).keys()];
-  }
-  const left = Math.max(
-    0,
-    Math.min(total - width, current - Math.floor(width / 2)),
-  );
-  const items: (string | number)[] = new Array(width);
-  for (let i = 0; i < width; i += 1) {
-    items[i] = i + left;
-  }
-  // replace non-ending items with placeholders
-  if (typeof items[0] === 'number' && items[0] > 0) {
-    items[0] = 0;
-    items[1] = 'prev-more';
-  }
-  const lastItem = items[items.length - 1];
-  if (typeof lastItem === 'number' && lastItem < total - 1) {
-    items[items.length - 1] = total - 1;
-    items[items.length - 2] = 'next-more';
-  }
-  return items;
-}
+  // Convert 0-based to 1-based for standard component
+  const currentPage1Based = currentPage + 1;
 
-export default memo(
-  forwardRef(function Pagination(
-    {
-      style,
-      pageCount,
-      currentPage = 0,
-      maxPageItemCount = 9,
-      onPageChange,
-    }: PaginationProps,
-    ref: Ref<HTMLDivElement>,
-  ) {
-    const pageItems = generatePageItems(
-      pageCount,
-      currentPage,
-      maxPageItemCount,
-    );
-    return (
-      <div ref={ref} className="dt-pagination" style={style}>
-        <ul className="pagination pagination-sm">
-          {pageItems.map(item =>
-            typeof item === 'number' ? (
-              // actual page number
-              <li
-                key={item}
-                className={currentPage === item ? 'active' : undefined}
-              >
-                <a
-                  href={`#page-${item}`}
-                  role="button"
-                  onClick={e => {
-                    e.preventDefault();
-                    onPageChange(item);
-                  }}
-                >
-                  {item + 1}
-                </a>
-              </li>
-            ) : (
-              <li key={item} className="dt-pagination-ellipsis">
-                <span>…</span>
-              </li>
-            ),
-          )}
-        </ul>
-      </div>
-    );
-  }),
-);
+  // Handle page change: convert 1-based back to 0-based for backward compatibility
+  const handlePageChange = (page1Based: number) => {
+    onPageChange(page1Based - 1);
+  };
+
+  return (
+    <PaginationContainer ref={ref} className="dt-pagination" style={style}>
+      <UltimatePagination
+        totalPages={pageCount}
+        currentPage={currentPage1Based}
+        onChange={handlePageChange}
+      />
+    </PaginationContainer>
+  );
+});
