@@ -42,6 +42,7 @@ import {
 import { AntdCollapse } from 'src/components';
 import { Tooltip } from 'src/components/Tooltip';
 import { Input } from 'src/components/Input';
+import { InputRef } from 'antd-v5';
 import Label from 'src/components/Label';
 import { usePluginContext } from 'src/components/DynamicPlugins';
 import Icons from 'src/components/Icons';
@@ -438,10 +439,21 @@ const doesVizMatchSelector = (viz: ChartMetadata, selector: string) =>
 export default function VizTypeGallery(props: VizTypeGalleryProps) {
   const { selectedViz, onChange, onDoubleClick, className, denyList } = props;
   const { mountedPluginMetadata } = usePluginContext();
-  const searchInputRef = useRef<HTMLInputElement>();
+  const searchInputRef = useRef<InputRef>(null);
   const [searchInputValue, setSearchInputValue] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(true);
   const isActivelySearching = isSearchFocused && !!searchInputValue;
+
+  // Auto-focus search input when modal opens
+  useEffect(() => {
+    // Small delay allows modal animation to complete
+    const timer = setTimeout(() => {
+      searchInputRef.current?.focus({ preventScroll: true });
+    }, 100);
+
+    // Cleanup timeout on unmount
+    return () => clearTimeout(timer);
+  }, []); // Empty deps = run once on mount
 
   const selectedVizMetadata: ChartMetadata | null = selectedViz
     ? mountedPluginMetadata[selectedViz]
@@ -729,7 +741,7 @@ export default function VizTypeGallery(props: VizTypeGalleryProps) {
       <SearchWrapper>
         <Input
           type="text"
-          ref={searchInputRef as any /* cast required because emotion */}
+          ref={searchInputRef}
           value={searchInputValue}
           placeholder={t('Search all charts')}
           onChange={changeSearch}
