@@ -18,27 +18,33 @@
  */
 import { FilterXSS, getDefaultWhiteList } from 'xss';
 
+const TAG_NAME_PATTERN = /<\/?([a-zA-Z][a-zA-Z0-9-]*)[^>]*>/g;
+
+const allowedHtmlTags = {
+  ...getDefaultWhiteList(),
+  span: ['style', 'class', 'title'],
+  div: ['style', 'class'],
+  a: ['style', 'class', 'href', 'title', 'target'],
+  img: ['style', 'class', 'src', 'alt', 'title', 'width', 'height'],
+  video: [
+    'autoplay',
+    'controls',
+    'loop',
+    'preload',
+    'src',
+    'height',
+    'width',
+    'muted',
+  ],
+};
+
 const xssFilter = new FilterXSS({
-  whiteList: {
-    ...getDefaultWhiteList(),
-    span: ['style', 'class', 'title'],
-    div: ['style', 'class'],
-    a: ['style', 'class', 'href', 'title', 'target'],
-    img: ['style', 'class', 'src', 'alt', 'title', 'width', 'height'],
-    video: [
-      'autoplay',
-      'controls',
-      'loop',
-      'preload',
-      'src',
-      'height',
-      'width',
-      'muted',
-    ],
-  },
+  whiteList: allowedHtmlTags,
   stripIgnoreTag: true,
   css: false,
 });
+
+const ALLOWED_TAG_NAMES = new Set(Object.keys(allowedHtmlTags));
 
 export function sanitizeHtml(htmlString: string) {
   return xssFilter.process(htmlString);
@@ -51,19 +57,43 @@ export function hasHtmlTagPattern(str: string): boolean {
   return htmlTagPattern.test(str);
 }
 
-export function isProbablyHTML(text: string) {
-  const cleanedStr = text.trim().toLowerCase();
+export function isProbablyHTML(text: string): boolean {
+  if (!text || typeof text !== 'string') {
+    return false;
+  }
 
-  if (
-    cleanedStr.startsWith('<!doctype html>') &&
-    hasHtmlTagPattern(cleanedStr)
-  ) {
+  const trimmed = text.trim();
+
+  if (!trimmed.includes('<') || !trimmed.includes('>')) {
+    return false;
+  }
+
+  const lowerTrimmed = trimmed.toLowerCase();
+  if (lowerTrimmed.startsWith('<!doctype html>')) {
     return true;
   }
 
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(cleanedStr, 'text/html');
-  return Array.from(doc.body.childNodes).some(({ nodeType }) => nodeType === 1);
+  const tagNames = new Set<string>();
+  let match;
+
+  TAG_NAME_PATTERN.lastIndex = 0;
+
+  while ((match = TAG_NAME_PATTERN.exec(trimmed)) !== null) {
+    const tagName = match[1].toLowerCase();
+    tagNames.add(tagName);
+  }
+
+  if (tagNames.size === 0) {
+    return false;
+  }
+
+  for (const tagName of tagNames) {
+    if (ALLOWED_TAG_NAMES.has(tagName)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export function sanitizeHtmlIfNeeded(htmlString: string) {
