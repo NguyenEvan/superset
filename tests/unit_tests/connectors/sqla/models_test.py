@@ -287,3 +287,65 @@ def test_normalize_prequery_result_type_custom_sql() -> None:
         sqla_table._normalize_prequery_result_type(row, dimension, columns_by_name)
         == "Car"
     )
+
+
+def test_get_sqla_table_with_catalog() -> None:
+    """
+    Test that get_sqla_table() includes catalog in the table object.
+    """
+    database = Database(database_name="my_db", sqlalchemy_uri="sqlite://")
+    sqla_table = SqlaTable(
+        table_name="orders",
+        schema="sample_orders",
+        catalog="my-project",
+        columns=[],
+        metrics=[],
+        database=database,
+    )
+
+    tbl = sqla_table.get_sqla_table()
+
+    assert tbl.name == "orders"
+    assert tbl.schema == "sample_orders"
+    assert tbl.catalog == "my-project"
+
+
+def test_get_sqla_table_without_catalog() -> None:
+    """
+    Test that get_sqla_table() works correctly when catalog is None.
+    """
+    database = Database(database_name="my_db", sqlalchemy_uri="sqlite://")
+    sqla_table = SqlaTable(
+        table_name="orders",
+        schema="sample_orders",
+        catalog=None,
+        columns=[],
+        metrics=[],
+        database=database,
+    )
+
+    tbl = sqla_table.get_sqla_table()
+
+    assert tbl.name == "orders"
+    assert tbl.schema == "sample_orders"
+    assert not hasattr(tbl, "catalog") or tbl.catalog is None
+
+
+def test_get_sqla_table_with_schema_no_catalog() -> None:
+    """
+    Test that get_sqla_table() works with schema but no catalog (common case).
+    """
+    database = Database(database_name="my_db", sqlalchemy_uri="sqlite://")
+    sqla_table = SqlaTable(
+        table_name="users",
+        schema="public",
+        columns=[],
+        metrics=[],
+        database=database,
+    )
+
+    tbl = sqla_table.get_sqla_table()
+
+    assert tbl.name == "users"
+    assert tbl.schema == "public"
+    assert not hasattr(tbl, "catalog") or tbl.catalog is None
