@@ -1468,11 +1468,19 @@ class SqlaTable(
 
     def get_sqla_table(self) -> TableClause:
         tbl = table(self.table_name)
-        if self.schema:
+        
+        if self.catalog and self.schema:
+            tbl.schema = f"{self.catalog}.{self.schema}"
+        elif self.catalog:
+            tbl.schema = self.catalog
+        elif self.schema:
             tbl.schema = self.schema
-        if self.catalog:
-            tbl.catalog = self.catalog
+
         return tbl
+
+
+
+    
 
     def get_from_clause(
         self,
